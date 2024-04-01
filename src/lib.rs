@@ -47,11 +47,15 @@ impl_fmt_data!(NaiveDateTime, DATE);
 
 // =========================
 pub trait PrepData<T: FormatData> {
-    fn prep_data(self, conn: Connection) -> PreppedGridData;
+    type Prep;
+
+    fn prep_data(self, conn: Connection) -> Self::Prep;
 }
 
 impl<T: FormatData> PrepData<T> for Vec<Vec<T>> {
-    fn prep_data(self, conn: Connection) -> PreppedGridData  {
+    type Prep = PreppedGridData;
+
+    fn prep_data(self, conn: Connection) -> Self::Prep  {
         let mut grid = Vec::new();
         for row in self {
             let mut inner_vec = Vec::new();
@@ -60,7 +64,7 @@ impl<T: FormatData> PrepData<T> for Vec<Vec<T>> {
             }
             grid.push(inner_vec)
         }
-        PreppedGridData {
+        Self::Prep {
             data: grid,
             conn
         }

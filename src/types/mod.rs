@@ -1,13 +1,8 @@
 use std::sync::Arc;
 use oracle::Connection;
 use chrono::NaiveDateTime;
-pub mod errors;
 
-// #[derive(Debug, Clone)]
-// pub enum Data<T: FormatData> {
-//     Grid(Vec<Vec<FormattedData>>),
-//     Stmt(T)
-// }
+pub mod errors;
 
 #[derive(Debug)]
 pub struct PreppedGridData {

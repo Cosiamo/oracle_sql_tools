@@ -8,6 +8,9 @@ pub enum OracleSqlToolsError {
     #[error("Header length, {header_length}, does not match body length, {body_length}")]
     InvalidHeaderLength {header_length: usize, body_length: usize},
 
+    // #[error("When using `.insert()` the initial data needs to be a 2 Dimensional Vector (vec![vec![]])")]
+    // NoHeaderOrOnlyHeader,
+
     #[error("Input grid length is less than or equal to 1, which implies the grid is empty or only contains a header.")]
     NoData,
 
