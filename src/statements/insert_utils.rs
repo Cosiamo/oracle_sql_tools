@@ -4,7 +4,6 @@ use crate::types::{errors::OracleSqlToolsError, BatchPrep, CellProperties, Forma
 
 use super::mutate_grid::MutateGrid;
 
-
 impl BatchPrep {
     pub fn split_batch_by_threads(mut self) -> Result<(), OracleSqlToolsError> {
         let len = self.data_body.len();
@@ -78,30 +77,58 @@ impl AtomicReffedData for Arc<Vec<Vec<FormattedData>>> {
     }
 }
 
+macro_rules! batch_set {
+    ($data:ident, $batch:ident, $val:ident) => {{
+        match $batch.set($data.x_ind + 1, $val) {
+            Ok(val) => return Ok(val),
+            Err(e) => return Err(OracleSqlToolsError::CellPropertyError { 
+                error_message: e, 
+                cell_value: $val.to_string(),
+                x_index: $data.x_ind, 
+                y_index: $data.y_ind 
+            }),
+        }
+    }};
+}
+
 impl CellProperties<'_> {
     pub fn match_stmt(self, batch: &mut oracle::Batch<'_>) -> Result<(), OracleSqlToolsError> {
         match self.cell {
-            FormattedData::STRING(val) => Ok(batch.set(self.x_ind + 1, val)?),
+            FormattedData::STRING(val) => batch_set!(self, batch, val),
             FormattedData::INT(val) => {
                 match self.varchar_ind.contains(&self.x_ind) {
-                    true => Ok(batch.set(self.x_ind + 1, &val.to_string())?),
-                    false => Ok(batch.set(self.x_ind + 1, val)?),
+                    true => { 
+                        let borrowed_val = &val.to_string(); 
+                        batch_set!(self, batch, borrowed_val);
+                    },
+                    false => batch_set!(self, batch, val),
                 }
             },
             FormattedData::FLOAT(val) => {
                 match self.varchar_ind.contains(&self.x_ind) {
-                    true => Ok(batch.set(self.x_ind + 1, &val.to_string())?),
-                    false => Ok(batch.set(self.x_ind + 1, val)?),
+                    true => { 
+                        let borrowed_val = &val.to_string(); 
+                        batch_set!(self, batch, borrowed_val);
+                    },
+                    false => batch_set!(self, batch, val),
                 }
             },
             FormattedData::DATE(val) => {
-                let stamp = match val.to_string().parse::<String>() {
-                    Ok(stamp) => stamp,
-                    Err(e) => panic!("{:?}", e),
-                };
-                Ok(batch.set(self.x_ind + 1, &stamp)?)
+                let stamp = val.to_string().parse::<String>()?;
+                let res = &stamp;
+                batch_set!(self, batch, res)
             },
-            FormattedData::EMPTY => Ok(batch.set(self.x_ind + 1, &None::<String>)?),
+            FormattedData::EMPTY => {
+                match batch.set(self.x_ind + 1, &None::<String>) {
+                    Ok(val) => return Ok(val),
+                    Err(e) => return Err(OracleSqlToolsError::CellPropertyError { 
+                        error_message: e, 
+                        cell_value: "NULL".to_string(),
+                        x_index: self.x_ind, 
+                        y_index: self.y_ind 
+                    }),
+                }
+            },
         }
     }
 }
