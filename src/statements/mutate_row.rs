@@ -1,9 +1,7 @@
-use std::sync::Arc;
-
 use crate::{types::FormattedData, utils::remove_invalid_chars};
 
 pub trait MutateRow {
-    fn insert_stmt(self, table_name: &str) -> Arc<String>;
+    fn insert_stmt(self, table_name: &str) -> String;
     fn to_string(&self) -> Vec<String>;
 }
 
@@ -22,7 +20,7 @@ macro_rules! to_string {
 }
 
 impl MutateRow for Vec<FormattedData> {
-    fn insert_stmt(self, table_name: &str) -> Arc<String> {
+    fn insert_stmt(self, table_name: &str) -> String {
         // creating indexes in an insert statement for the batch set methods to attach values to
         let mut n: Vec<String> = Vec::new();
         for i in 0..self.len() {
@@ -34,7 +32,7 @@ impl MutateRow for Vec<FormattedData> {
             &remove_invalid_chars(&header.join(",")), 
             ") VALUES (", &n.join(", "),  &")".to_string()
         ].concat();
-        Arc::new(insert)
+        insert
     }
     
     fn to_string(&self) -> Vec<String> { to_string!(self) }

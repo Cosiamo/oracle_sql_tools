@@ -29,16 +29,23 @@ pub struct DatatypeIndexes {
 
 #[derive(Debug)]
 pub struct BatchPrep {
-    pub data_body: Vec<Vec<FormattedData>>,
-    pub conn: Arc<Connection>,
-    pub insert_stmt: Arc<String>,
+    pub data: Vec<Vec<FormattedData>>,
+    pub conn: Connection,
+    pub insert_stmt: String,
     pub data_indexes: DatatypeIndexes,
+}
+
+#[derive(Debug)]
+pub struct AtomicReffedData {
+    pub data: Arc<Vec<Vec<FormattedData>>>,
+    pub num: usize,
+    pub varchar_ind: Arc<Vec<usize>>,
 }
 
 #[derive(Debug)]
 pub struct CellProperties<'a> {
     pub cell: &'a FormattedData,
-    pub varchar_ind: std::sync::Arc<Vec<usize>>,
+    pub varchar_ind: &'a Arc<Vec<usize>>,
     pub x_ind: usize,
     pub y_ind: usize,
 }
