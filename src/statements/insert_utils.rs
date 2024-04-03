@@ -1,30 +1,8 @@
-use std::{sync::Arc, thread::{self, JoinHandle}};
+use std::{fmt::Display, sync::Arc, thread::{self, JoinHandle}};
 use oracle::Connection;
 
-use crate::types::{errors::OracleSqlToolsError, AtomicReffedData, BatchPrep, CellProperties, FormattedData};
+use crate::types::{errors::OracleSqlToolsError, GridProperties, BatchPrep, CellProperties, FormattedData};
 use super::mutate_grid::MutateGrid;
-
-macro_rules! iterate_grid {
-    ($input:expr, $varchar_ind:ident, $num:ident, $batch:ident) => {{
-        // each thread iterates over their slice of the data
-        $input.data.iter().enumerate().try_for_each(|(y, row)| 
-        -> Result<(), OracleSqlToolsError> {
-            row.iter().enumerate().try_for_each(|(x, cell)| 
-            -> Result<(), OracleSqlToolsError> {
-                CellProperties {
-                    cell,
-                    varchar_ind: &$varchar_ind,
-                    x_ind: x,
-                    y_ind: ($num + y),
-                }.match_stmt(&mut $batch)
-            })?;
-            $batch.append_row(&[])?;
-            Ok(())
-        })?;
-        $batch.execute()?;
-        Ok(())
-    }};
-}
 
 impl BatchPrep {
     pub fn split_batch_by_threads(mut self) -> Result<(), OracleSqlToolsError> {
@@ -56,19 +34,14 @@ impl BatchPrep {
             } else { ad = Arc::new(self.data.to_owned()); }
             handles.push(thread::spawn(move || {
                 // creates a unique Batch per thread
-                let batch: oracle::Batch<'_> = match conn.batch(&insert.as_str(), ad.len()).build() {
-                    Ok(val) => val,
-                    Err(e) => return Err(OracleSqlToolsError::OracleError(e)),
-                };
-                let info = AtomicReffedData {
+                let mut batch: oracle::Batch<'_> = conn
+                    .batch(&insert.as_str(), ad.len())
+                    .build()?;
+                GridProperties {
                     data: ad,
                     num: (num.ceil() as usize - 1) * n,
                     varchar_ind,
-                };
-                match info.handle_concurrency(batch) {
-                    Ok(val) => return Ok(val),
-                    Err(e) => return Err(e),
-                };
+                }.handle_concurrency(&mut batch)
             }));
         }
         // executes all threads
@@ -81,77 +54,62 @@ impl BatchPrep {
 
     pub fn single_thread_batch(self) -> Result<(), OracleSqlToolsError> {
         let body_len = &self.data.len();
-        let mut batch: oracle::Batch<'_> = match self.conn.batch(&self.insert_stmt.as_str(), body_len.to_owned()).build() {
-            Ok(val) => val,
-            Err(e) => return Err(OracleSqlToolsError::OracleError(e)),
-        };
+        let mut batch: oracle::Batch<'_> = self.conn.batch(&self.insert_stmt.as_str(), body_len.to_owned()).build()?;
         // CellProperties expects an Arc<Vec<usize>>
         let varchar_ind = Arc::new(self.data_indexes.is_varchar);
-        // num is 0 because we're not dividing by any threads
-        let num = 0 as usize;
-        match iterate_grid!(self, varchar_ind, num, batch) {
-            Ok(_) => {},
-            Err(e) => return Err(e),
-        };
+        GridProperties {
+            data: self.data.into(),
+            num: 0 as usize,
+            varchar_ind,
+        }.handle_concurrency(&mut batch)?;
         self.conn.commit()?;
         Ok(())
     }
 }
 
-impl AtomicReffedData {
-    fn handle_concurrency(
-        self, mut batch: oracle::Batch<'_>
-    ) -> Result<(), OracleSqlToolsError> {
-        let varchar_ind = self.varchar_ind;
-        let num = self.num;
-        iterate_grid!(self, varchar_ind, num, batch)
-    }
-}
+impl GridProperties {
+    fn handle_concurrency(self, batch: &mut oracle::Batch<'_>) 
+    -> Result<(), OracleSqlToolsError> {
+        // each thread iterates over their slice of the data
+        self.data.iter().enumerate().try_for_each(|(y, row)| 
+        -> Result<(), OracleSqlToolsError> {
+            row.iter().enumerate().try_for_each(|(x, cell)| 
+            -> Result<(), OracleSqlToolsError> {
+                CellProperties {
+                    cell,
+                    varchar_ind: &self.varchar_ind,
+                    x_ind: x,
+                    y_ind: (self.num + y),
+                }.match_stmt(batch)
+            })?;
+            batch.append_row(&[])?;
+            Ok(())
+        })?;
 
-macro_rules! batch_set {
-    ($data:ident, $batch:ident, $val:ident) => {{
-        match $batch.set($data.x_ind + 1, $val) {
-            Ok(val) => return Ok(val),
-            Err(e) => return Err(OracleSqlToolsError::CellPropertyError { 
-                error_message: e, 
-                cell_value: $val.to_string(),
-                x_index: $data.x_ind, 
-                y_index: $data.y_ind 
-            }),
-        }
-    }};
+        batch.execute()?;
+        Ok(())
+    }
 }
 
 impl CellProperties<'_> {
     pub fn match_stmt(self, batch: &mut oracle::Batch<'_>) -> Result<(), OracleSqlToolsError> {
-        match self.cell {
-            FormattedData::STRING(val) => batch_set!(self, batch, val),
-            FormattedData::INT(val) => {
-                match self.varchar_ind.contains(&self.x_ind) {
-                    true => { 
-                        let borrowed_val = &val.to_string(); 
-                        batch_set!(self, batch, borrowed_val);
-                    },
-                    false => batch_set!(self, batch, val),
-                }
+        match &self.cell {
+            FormattedData::STRING(val) => batch_set(self, batch, val.to_string()),
+            FormattedData::INT(val) => match self.varchar_ind.contains(&self.x_ind) {
+                true => batch_set(self, batch, val.to_string()),
+                false => batch_set(self, batch, *val),
             },
-            FormattedData::FLOAT(val) => {
-                match self.varchar_ind.contains(&self.x_ind) {
-                    true => { 
-                        let borrowed_val = &val.to_string(); 
-                        batch_set!(self, batch, borrowed_val);
-                    },
-                    false => batch_set!(self, batch, val),
-                }
+            FormattedData::FLOAT(val) => match self.varchar_ind.contains(&self.x_ind) {
+                true => batch_set(self, batch, val.to_string()),
+                false => batch_set(self, batch, *val),
             },
             FormattedData::DATE(val) => {
                 let stamp = val.to_string().parse::<String>()?;
-                let res = &stamp;
-                batch_set!(self, batch, res)
+                batch_set(self, batch, stamp)
             },
             FormattedData::EMPTY => {
                 match batch.set(self.x_ind + 1, &None::<String>) {
-                    Ok(val) => return Ok(val),
+                    Ok(_) => return Ok(()),
                     Err(e) => return Err(OracleSqlToolsError::CellPropertyError { 
                         error_message: e, 
                         cell_value: "NULL".to_string(),
@@ -161,5 +119,19 @@ impl CellProperties<'_> {
                 }
             },
         }
+    }
+}
+
+fn batch_set<T> (cell_props: CellProperties, batch: &mut oracle::Batch<'_>, value: T) 
+-> Result<(), OracleSqlToolsError>
+where T: oracle::sql_type::ToSql + Display {
+    match batch.set(cell_props.x_ind + 1, &value) {
+        Ok(_) => Ok(()),
+        Err(e) => return Err(OracleSqlToolsError::CellPropertyError { 
+            error_message: e, 
+            cell_value: value.to_string(),
+            x_index: cell_props.x_ind, 
+            y_index: cell_props.y_ind 
+        }),
     }
 }

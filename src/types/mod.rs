@@ -36,7 +36,7 @@ pub struct BatchPrep {
 }
 
 #[derive(Debug)]
-pub struct AtomicReffedData {
+pub struct GridProperties {
     pub data: Arc<Vec<Vec<FormattedData>>>,
     pub num: usize,
     pub varchar_ind: Arc<Vec<usize>>,

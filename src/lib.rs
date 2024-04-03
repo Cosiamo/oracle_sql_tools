@@ -55,7 +55,7 @@ pub trait PrepData<T: FormatData> {
 impl<T: FormatData> PrepData<T> for Vec<Vec<T>> {
     type Prep = PreppedGridData;
 
-    fn prep_data(self, conn: Connection) -> Self::Prep  {
+    fn prep_data(self, connection: Connection) -> Self::Prep  {
         let mut grid = Vec::new();
         for row in self {
             let mut inner_vec = Vec::new();
@@ -66,7 +66,7 @@ impl<T: FormatData> PrepData<T> for Vec<Vec<T>> {
         }
         Self::Prep {
             data: grid,
-            conn
+            conn: connection
         }
     }
 }

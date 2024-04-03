@@ -5,6 +5,7 @@ pub trait MutateGrid {
     fn replace_header(&mut self, connection: &Connection, table_name: &str) -> Result<(Vec<FormattedData>, &Self), OracleSqlToolsError>;
     fn separate_header(&mut self) -> (Vec<FormattedData>, &Self);
     fn get_col_datatype(&self) -> DatatypeIndexes;
+    fn get_varchar_ind(&self) -> DatatypeIndexes;
     fn divide(&mut self, num: f32) -> Self;
 }
 
@@ -92,6 +93,31 @@ impl MutateGrid for Vec<Vec<FormattedData>> {
             }
         }
 
+        DatatypeIndexes {
+            is_varchar,
+            is_float,
+            is_int,
+            is_date,
+        }
+    }
+
+    fn get_varchar_ind(&self) -> DatatypeIndexes {
+        let mut is_varchar: Vec<usize> = Vec::new();
+        let is_float: Vec<usize> = Vec::new();
+        let is_int: Vec<usize> = Vec::new();
+        let is_date: Vec<usize> = Vec::new();
+        // find varchar
+        'row: for x in 0..self[0].len() {
+            for y in 1..self.len() {
+                match &self[y][x] {
+                    FormattedData::STRING(_) => { is_varchar.push(x); continue 'row; },
+                    FormattedData::INT(_) => continue,
+                    FormattedData::FLOAT(_) => continue,
+                    FormattedData::DATE(_) => continue,
+                    FormattedData::EMPTY => continue,
+                }
+            }
+        }
         DatatypeIndexes {
             is_varchar,
             is_float,

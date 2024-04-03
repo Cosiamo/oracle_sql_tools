@@ -6,9 +6,8 @@ use crate::{types::{errors::OracleSqlToolsError, DatatypeIndexes, FormattedData}
 use super::mutate_row::MutateRow;
 
 pub trait Create {
-    fn create_table(
-        &self, table_name: &str, col_indexes: &DatatypeIndexes, conn: &Connection
-    ) -> Result<(), OracleSqlToolsError>;
+    fn create_table(&self, table_name: &str, col_indexes: &DatatypeIndexes, conn: &Connection) 
+    -> Result<(), OracleSqlToolsError>;
 }
 
 macro_rules! compare_data_length {
@@ -24,9 +23,8 @@ macro_rules! compare_data_length {
 }
 
 impl Create for Vec<Vec<FormattedData>> {
-    fn create_table(
-        &self, table_name: &str, data_type_indexes: &DatatypeIndexes, conn: &Connection
-    ) -> Result<(), OracleSqlToolsError> {
+    fn create_table(&self, table_name: &str, data_type_indexes: &DatatypeIndexes, conn: &Connection) 
+    -> Result<(), OracleSqlToolsError> {
         if self.len() <= 1 { return Err(OracleSqlToolsError::NoData); }
 
         let mut varchar_col_size: HashMap<usize, usize> = HashMap::new();
