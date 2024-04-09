@@ -1,5 +1,6 @@
-use crate::types::FormattedData;
+use crate::format_data::FormattedData;
 
+// Removes characters that are invalid in SQL column names
 pub fn remove_invalid_chars(input: &String) -> String {
     input
         .trim()
@@ -21,7 +22,7 @@ pub fn remove_invalid_chars(input: &String) -> String {
 }
 
 impl FormattedData {
-    pub fn to_string(self) -> String {
+    pub(crate) fn to_string(self) -> String {
         match self {
             FormattedData::STRING(val) => val.to_owned(),
             FormattedData::INT(val) => val.to_string(),

@@ -1,23 +1,9 @@
 use std::sync::Arc;
 use oracle::Connection;
-use chrono::NaiveDateTime;
+
+use crate::format_data::FormattedData;
 
 pub mod errors;
-
-#[derive(Debug)]
-pub struct PreppedGridData {
-    pub data: Vec<Vec<FormattedData>>,
-    pub conn: Connection,
-}
-
-#[derive(Debug, Clone)]
-pub enum FormattedData {
-    STRING(String),
-    INT(i64),
-    FLOAT(f64),
-    DATE(NaiveDateTime),
-    EMPTY,
-}
 
 #[derive(Debug)]
 pub struct DatatypeIndexes {
@@ -48,10 +34,4 @@ pub struct CellProperties<'a> {
     pub varchar_ind: &'a Arc<Vec<usize>>,
     pub x_ind: usize,
     pub y_ind: usize,
-}
-
-#[derive(Debug)]
-pub struct PreppedRowData {
-    pub data: Vec<String>,
-    pub conn: Connection,
 }

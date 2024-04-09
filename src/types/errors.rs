@@ -21,7 +21,4 @@ pub enum OracleSqlToolsError {
 
     #[error(transparent)]
     DateCantConvertToString(#[from] core::convert::Infallible),
-
-    #[error("Could not unwrap the Arc from one of the data types")]
-    ArcUnwrapError,
 }

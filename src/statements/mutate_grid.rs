@@ -1,7 +1,7 @@
 use oracle::Connection;
-use crate::{types::errors::OracleSqlToolsError, types::{DatatypeIndexes, FormattedData}};
+use crate::{format_data::FormattedData, types::{errors::OracleSqlToolsError, DatatypeIndexes}};
 
-pub trait MutateGrid {
+pub(crate) trait MutateGrid {
     fn replace_header(&mut self, connection: &Connection, table_name: &str) -> Result<(Vec<FormattedData>, &Self), OracleSqlToolsError>;
     fn separate_header(&mut self) -> (Vec<FormattedData>, &Self);
     fn get_col_datatype(&self) -> DatatypeIndexes;

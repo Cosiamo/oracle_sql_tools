@@ -1,10 +1,10 @@
-use crate::types::{errors::OracleSqlToolsError, BatchPrep, DatatypeIndexes, PreppedGridData};
-use super::{create_table::Create, mutate_grid::MutateGrid, mutate_row::MutateRow, utils::does_table_exist};
+use crate::types::{errors::OracleSqlToolsError, BatchPrep, DatatypeIndexes};
+use super::{create_table::CreateFromInsert, mutate_grid::MutateGrid, mutate_row::MutateRow, utils::does_table_exist, PreppedGridData};
 
 impl PreppedGridData {
-    // multi-threaded approach by default
-    // splits the data by the number of CPU threads in the host machine
-    // in each thread it creates it's own Batch
+    // Inserts the input data into a table
+    //
+    // Splits the data by the number of CPU threads in the host machine. Each thread creates it's own [`oracle::Batch`] which helps the upload speed for large datasets.
     pub fn insert(self, table_name: &str) -> Result<(), OracleSqlToolsError> {
         stage_insert_data(self, table_name)
             .unwrap()
@@ -12,7 +12,9 @@ impl PreppedGridData {
         Ok(())
     }
 
-    // only uses a single core to insert the data
+    // Inserts the input data into a table using only a single thread
+    //
+    // Useful if you have a procedure or trigger in your database that groups data in a table or view via insert
     pub fn insert_single_thread(self, table_name: &str) -> Result<(), OracleSqlToolsError> {
         stage_insert_data(self, table_name)
             .unwrap()

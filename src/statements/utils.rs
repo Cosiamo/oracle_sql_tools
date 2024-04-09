@@ -2,6 +2,7 @@ use oracle::Connection;
 
 use crate::types::errors::OracleSqlToolsError;
 
+// Checks if a table exists
 pub fn does_table_exist(conn: &Connection, table_name: &str) -> Result<bool, OracleSqlToolsError> {
     let mut existing_tables = conn
         .statement("SELECT table_name FROM user_tables")

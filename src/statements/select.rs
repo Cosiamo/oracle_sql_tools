@@ -1,6 +1,8 @@
-use crate::{types::{errors::OracleSqlToolsError, PreppedRowData}, utils::remove_invalid_chars};
+use crate::{types::errors::OracleSqlToolsError, utils::remove_invalid_chars};
+use super::PreppedRowData;
 
 impl PreppedRowData {
+    // Selects the columns (via the input vector) from the specified table
     pub fn select(self, table_name: &str) -> Result<Vec<Vec<Option<String>>>, OracleSqlToolsError> {
         let header = self.data.iter().map(|cell|
             remove_invalid_chars(cell)

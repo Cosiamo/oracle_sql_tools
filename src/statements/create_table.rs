@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 use oracle::Connection;
 
-use crate::{types::{errors::OracleSqlToolsError, DatatypeIndexes, FormattedData}, utils::remove_invalid_chars};
-
+use crate::{format_data::FormattedData, types::{errors::OracleSqlToolsError, DatatypeIndexes}, utils::remove_invalid_chars};
 use super::mutate_row::MutateRow;
 
-pub trait Create {
+pub(crate) trait CreateFromInsert {
     fn create_table(&self, table_name: &str, col_indexes: &DatatypeIndexes, conn: &Connection) 
     -> Result<(), OracleSqlToolsError>;
 }
@@ -22,7 +21,7 @@ macro_rules! compare_data_length {
     };
 }
 
-impl Create for Vec<Vec<FormattedData>> {
+impl CreateFromInsert for Vec<Vec<FormattedData>> {
     fn create_table(&self, table_name: &str, data_type_indexes: &DatatypeIndexes, conn: &Connection) 
     -> Result<(), OracleSqlToolsError> {
         if self.len() <= 1 { return Err(OracleSqlToolsError::NoData); }

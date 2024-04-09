@@ -1,21 +1,21 @@
 use std::{fmt::Display, sync::Arc, thread::{self, JoinHandle}};
 use oracle::Connection;
 
-use crate::types::{errors::OracleSqlToolsError, GridProperties, BatchPrep, CellProperties, FormattedData};
+use crate::{format_data::FormattedData, types::{errors::OracleSqlToolsError, BatchPrep, CellProperties, GridProperties}};
 use super::mutate_grid::MutateGrid;
 
 impl BatchPrep {
-    pub fn split_batch_by_threads(mut self) -> Result<(), OracleSqlToolsError> {
-        // Atomically Reference Counted the connection and the insert statement 
+    pub(crate) fn split_batch_by_threads(mut self) -> Result<(), OracleSqlToolsError> {
+        // wrapping these variables in an Arc because they're going to be passed to multiple threads
         let conn: Arc<Connection> = Arc::new(self.conn);
         let insert_stmt: Arc<String> = Arc::new(self.insert_stmt);
+        let varchar_ind: Arc<Vec<usize>> = Arc::new(self.data_indexes.is_varchar);
 
         // divides the length of the data by the number of threads on the host CPU
         let len = self.data.len();
         let nthreads = num_cpus::get();
         let num = (len / nthreads + if len % nthreads == 0 { 0 } else { 1 }) as f32;
 
-        let varchar_ind = Arc::new(self.data_indexes.is_varchar);
         // captures the spawned threads into a vector
         let mut handles: Vec<JoinHandle<Result<(), OracleSqlToolsError>>> = Vec::new();
         // iterates as many times as there are threads
@@ -37,11 +37,12 @@ impl BatchPrep {
                 let mut batch: oracle::Batch<'_> = conn
                     .batch(&insert.as_str(), ad.len())
                     .build()?;
+                // each thread iterates over their slice of the data
                 GridProperties {
                     data: ad,
                     num: (num.ceil() as usize - 1) * n,
                     varchar_ind,
-                }.handle_concurrency(&mut batch)
+                }.get_cell_props(&mut batch)
             }));
         }
         // executes all threads
@@ -52,7 +53,7 @@ impl BatchPrep {
         Ok(())
     }
 
-    pub fn single_thread_batch(self) -> Result<(), OracleSqlToolsError> {
+    pub(crate) fn single_thread_batch(self) -> Result<(), OracleSqlToolsError> {
         let body_len = &self.data.len();
         let mut batch: oracle::Batch<'_> = self.conn.batch(&self.insert_stmt.as_str(), body_len.to_owned()).build()?;
         // CellProperties expects an Arc<Vec<usize>>
@@ -61,16 +62,14 @@ impl BatchPrep {
             data: self.data.into(),
             num: 0 as usize,
             varchar_ind,
-        }.handle_concurrency(&mut batch)?;
+        }.get_cell_props(&mut batch)?;
         self.conn.commit()?;
         Ok(())
     }
 }
 
 impl GridProperties {
-    fn handle_concurrency(self, batch: &mut oracle::Batch<'_>) 
-    -> Result<(), OracleSqlToolsError> {
-        // each thread iterates over their slice of the data
+    fn get_cell_props(self, batch: &mut oracle::Batch<'_>) -> Result<(), OracleSqlToolsError> {
         self.data.iter().enumerate().try_for_each(|(y, row)| 
         -> Result<(), OracleSqlToolsError> {
             row.iter().enumerate().try_for_each(|(x, cell)| 
@@ -80,7 +79,7 @@ impl GridProperties {
                     varchar_ind: &self.varchar_ind,
                     x_ind: x,
                     y_ind: (self.num + y),
-                }.match_stmt(batch)
+                }.bind_cell_to_batch(batch)
             })?;
             batch.append_row(&[])?;
             Ok(())
@@ -92,7 +91,7 @@ impl GridProperties {
 }
 
 impl CellProperties<'_> {
-    pub fn match_stmt(self, batch: &mut oracle::Batch<'_>) -> Result<(), OracleSqlToolsError> {
+    fn bind_cell_to_batch(self, batch: &mut oracle::Batch<'_>) -> Result<(), OracleSqlToolsError> {
         match &self.cell {
             FormattedData::STRING(val) => batch_set(self, batch, val.to_string()),
             FormattedData::INT(val) => match self.varchar_ind.contains(&self.x_ind) {

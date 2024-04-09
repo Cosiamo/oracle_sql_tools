@@ -1,6 +1,6 @@
-use crate::{types::FormattedData, utils::remove_invalid_chars};
+use crate::{format_data::FormattedData, utils::remove_invalid_chars};
 
-pub trait MutateRow {
+pub(crate) trait MutateRow {
     fn insert_stmt(self, table_name: &str) -> String;
     fn to_string(&self) -> Vec<String>;
 }
