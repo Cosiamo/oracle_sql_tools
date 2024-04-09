@@ -49,3 +49,9 @@ pub struct CellProperties<'a> {
     pub x_ind: usize,
     pub y_ind: usize,
 }
+
+#[derive(Debug)]
+pub struct PreppedRowData {
+    pub data: Vec<String>,
+    pub conn: Connection,
+}

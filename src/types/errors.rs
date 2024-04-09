@@ -11,7 +11,7 @@ pub enum OracleSqlToolsError {
     #[error("Input grid length is less than or equal to 1, which implies the grid is empty or only contains a header.")]
     NoData,
 
-    #[error("{:?}\n Cell Value:{:?} X_Index:{:?}, Y_INDEX:{:?}", error_message, cell_value, x_index, y_index)]
+    #[error("{:?}\n Cell Value:{:?} X_Index:{:?}, Y_Index:{:?}", error_message, cell_value, x_index, y_index)]
     CellPropertyError {
         error_message: oracle::Error,
         cell_value: String,

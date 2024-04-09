@@ -60,6 +60,7 @@ impl Create for Vec<Vec<FormattedData>> {
         }
         let create_table_stmt = format!("CREATE TABLE {} ({})", table_name, col_names.join(", "));
         conn.execute(&create_table_stmt, &[])?;
-        Ok(conn.commit()?)
+        conn.commit()?;
+        Ok(())
     }
 }

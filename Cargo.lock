@@ -236,6 +236,7 @@ dependencies = [
  "itertools",
  "num_cpus",
  "oracle",
+ "proc-macro2",
  "serde",
  "thiserror",
 ]

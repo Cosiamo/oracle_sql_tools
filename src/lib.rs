@@ -1,23 +1,13 @@
 use chrono::NaiveDateTime;
 use oracle::Connection;
-use types::{FormattedData::{self, DATE, FLOAT, INT, STRING}, PreppedGridData};
+use types::{FormattedData::{self, DATE, FLOAT, INT, STRING}, PreppedGridData, PreppedRowData};
 pub mod statements;
 pub mod types;
 pub mod utils;
 
-pub trait FormatData {
-    fn fmt_data(self) -> FormattedData;
-}
-impl FormatData for FormattedData { fn fmt_data(self) -> FormattedData { self } }
+pub trait FormatData { fn fmt_data(self) -> FormattedData; }
 
-macro_rules! impl_fmt_data {
-    ($data:ty, $enum_type:ident) => {
-        impl FormatData for $data {
-            fn fmt_data(self) -> FormattedData { $enum_type(self.into()) }
-        }
-    };
-}
-
+impl FormatData for FormattedData { fn fmt_data(self) -> Self { self } }
 impl FormatData for &[u8] {
     fn fmt_data(self) -> FormattedData {
         let clone_on_write_string = String::from_utf8_lossy(self);
@@ -35,29 +25,6 @@ impl FormatData for Vec<u8> {
         STRING(utf8_string)
     }
 }
-impl_fmt_data!(&str, STRING);
-impl_fmt_data!(String, STRING);
-impl_fmt_data!(i8, INT);
-impl_fmt_data!(i16, INT);
-impl_fmt_data!(i32, INT);
-impl_fmt_data!(i64, INT);
-impl_fmt_data!(f32, FLOAT);
-impl_fmt_data!(f64, FLOAT);
-impl_fmt_data!(NaiveDateTime, DATE);
-
-macro_rules! impl_fmt_data_option {
-    ($data:ty, $enum_type:ident) => {
-        impl FormatData for $data {
-            fn fmt_data(self) -> FormattedData {
-                match self {
-                    Some(val) => $enum_type(val.into()),
-                    None => FormattedData::EMPTY,
-                }
-            }
-        }
-    };
-}
-
 impl FormatData for Option<&[u8]> {
     fn fmt_data(self) -> FormattedData {
         match self {
@@ -84,6 +51,36 @@ impl FormatData for Option<Vec<u8>> {
             None => FormattedData::EMPTY,
         }
     }
+}
+
+macro_rules! impl_fmt_data {
+    ($data:ty, $enum_type:ident) => {
+        impl FormatData for $data {
+            fn fmt_data(self) -> FormattedData { $enum_type(self.into()) }
+        }
+    };
+}
+impl_fmt_data!(&str, STRING);
+impl_fmt_data!(String, STRING);
+impl_fmt_data!(i8, INT);
+impl_fmt_data!(i16, INT);
+impl_fmt_data!(i32, INT);
+impl_fmt_data!(i64, INT);
+impl_fmt_data!(f32, FLOAT);
+impl_fmt_data!(f64, FLOAT);
+impl_fmt_data!(NaiveDateTime, DATE);
+
+macro_rules! impl_fmt_data_option {
+    ($data:ty, $enum_type:ident) => {
+        impl FormatData for $data {
+            fn fmt_data(self) -> FormattedData {
+                match self {
+                    Some(val) => $enum_type(val.into()),
+                    None => FormattedData::EMPTY,
+                }
+            }
+        }
+    };
 }
 impl_fmt_data_option!(Option<&str>, STRING);
 impl_fmt_data_option!(Option<String>, STRING);
@@ -117,6 +114,19 @@ impl<T: FormatData> PrepData<T> for Vec<Vec<T>> {
         Self::Prep {
             data: grid,
             conn: connection
+        }
+    }
+}
+
+impl<T: FormatData + std::fmt::Display> PrepData<T> for Vec<T> {
+    type Prep = PreppedRowData;
+
+    fn prep_data(self, connection: Connection) -> Self::Prep {
+        let mut data = Vec::new();
+        for val in self { data.push(val.fmt_data().to_string()) }
+        Self::Prep {
+            data,
+            conn: connection,
         }
     }
 }

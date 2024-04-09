@@ -4,3 +4,4 @@ pub mod insert_utils;
 pub mod create_table;
 pub mod insert;
 pub mod utils;
+pub mod select;
