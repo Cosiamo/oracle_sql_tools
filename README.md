@@ -1,10 +1,10 @@
 # Oracle SQL Tools
----
+
 
 A crate that makes simple Oracle SQL queries easy to implement into your codebase. Built as an extension to the [Rust-oracle](https://crates.io/crates/oracle) crate (required).
 
 ## How To Use
----
+
 ### Set Up Dependencies
 Add these inside your `cargo.toml` file:
 ```toml
@@ -53,7 +53,7 @@ impl FormatData for MyType<'_> {
 ```
 
 ## Examples
----
+
 ### Select
 ``` rust
 let conn: oracle::Connection = match Connection::connect("<USERNAME>", "<PASSWORD>", "<IP ADDRESS>")?; 
