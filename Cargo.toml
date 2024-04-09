@@ -2,6 +2,13 @@
 name = "oracle_sql_tools"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "An extension to the Rust-Oracle crate to make simple queries easy to implement."
+readme = "README.md"
+repository = "https://github.com/Cosiamo/oracle_sql_tools"
+keywords = ["sql", "oracle", "database", "concurrency", "parallelism"]
+categories = ["concurrency", "database", "database-implementations"]
+exclude = ["main.rs", ".vscode/*", ".gitignore"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
