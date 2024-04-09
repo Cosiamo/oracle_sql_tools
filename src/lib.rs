@@ -118,7 +118,7 @@ impl<T: FormatData> PrepData<T> for Vec<Vec<T>> {
     }
 }
 
-impl<T: FormatData + std::fmt::Display> PrepData<T> for Vec<T> {
+impl<T: FormatData> PrepData<T> for Vec<T> {
     type Prep = PreppedRowData;
 
     fn prep_data(self, connection: Connection) -> Self::Prep {
