@@ -3,6 +3,7 @@
         "chrono",
         "colindx",
         "cpus",
+        "indicatif",
         "nthreads",
         "thiserror",
         "unrar"
