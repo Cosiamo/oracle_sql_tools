@@ -93,7 +93,7 @@ impl GridProperties {
                 }.bind_cell_to_batch(batch)
             })?;
             batch.append_row(&[])?;
-            progress_bar.inc(y as u64);
+            progress_bar.inc_length(y as u64);
             Ok(())
         })?;
 

@@ -1,6 +1,6 @@
 [package]
 name = "oracle_sql_tools"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 license = "MIT"
 description = "An extension to the Rust-Oracle crate to make simple queries easy to implement."
