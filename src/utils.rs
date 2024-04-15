@@ -1,6 +1,6 @@
 use crate::format_data::FormattedData;
 
-// Removes characters that are invalid in SQL column names
+/// Removes characters that are invalid in SQL column names
 pub fn remove_invalid_chars(input: &String) -> String {
     input
         .trim()

@@ -9,46 +9,46 @@ pub enum FormattedData {
     EMPTY,
 }
 
-// A trait that formats the input data to match [`format_data::FormattedData`]
-//
-// Already implemented for `&[u8]`, `Vec<u8>`, `&str`, 'String', 'i8', 'i16', 'i32', 'i64', 'f32', 'f64', and [`chrono::NaiveDateTime`], as well as, their Option<> variants
-//
-// To implement a local enum: 
-//
-// ```no_run
-// enum MyEnum {
-//     VARCHAR(String),
-//     NUMBER(i64)
-// }
-//
-// impl FormatData for MyEnum {
-//     fn fmt_data(self) -> FormattedData {
-//         match self {
-//             MyEnum::VARCHAR(val) => FormattedData::STRING(val.into()),
-//             MyEnum::NUMBER(val) => FormattedData::INT(val.into()),
-//         }
-//     }
-// }
-// ```
-//
-// To implement a foreign enum:
-//
-// ```no_run
-// use some_crate::SomeForeignType;
-//
-// struct MyType<'a>(&'a SomeForeignType);
-//
-// impl FormatData for MyType<'_> {
-//     fn fmt_data(self) -> FormattedData {
-//         match self {
-//             MyType(SomeForeignType::Int(val)) => FormattedData::INT(*val),
-//             MyType(SomeForeignType::Float(val)) => FormattedData::FLOAT(*val),
-//             MyType(SomeForeignType::String(val)) => FormattedData::STRING(val.to_owned()),
-//             MyType(SomeForeignType::None) => FormattedData::EMPTY,
-//         }
-//     }
-// }
-// ```
+/// A trait that formats the input data to match [`FormattedData`]
+///
+/// Already implemented for `&[u8]`, `Vec<u8>`, `&str`, 'String', 'i8', 'i16', 'i32', 'i64', 'f32', 'f64', and [`chrono::NaiveDateTime`], as well as, their Option<> variants
+///
+/// To implement a local enum: 
+///
+/// ```no_run
+/// enum MyEnum {
+///     VARCHAR(String),
+///     NUMBER(i64)
+/// }
+///
+/// impl FormatData for MyEnum {
+///     fn fmt_data(self) -> FormattedData {
+///         match self {
+///             MyEnum::VARCHAR(val) => FormattedData::STRING(val.into()),
+///             MyEnum::NUMBER(val) => FormattedData::INT(val.into()),
+///         }
+///     }
+/// }
+/// ```
+///
+/// To implement a foreign enum:
+///
+/// ```no_run
+/// use some_crate::SomeForeignType;
+///
+/// struct MyType<'a>(&'a SomeForeignType);
+///
+/// impl FormatData for MyType<'_> {
+///     fn fmt_data(self) -> FormattedData {
+///         match self {
+///             MyType(SomeForeignType::Int(val)) => FormattedData::INT(*val),
+///             MyType(SomeForeignType::Float(val)) => FormattedData::FLOAT(*val),
+///             MyType(SomeForeignType::String(val)) => FormattedData::STRING(val.to_owned()),
+///             MyType(SomeForeignType::None) => FormattedData::EMPTY,
+///         }
+///     }
+/// }
+/// ```
 pub trait FormatData { fn fmt_data(self) -> FormattedData; }
 
 impl FormatData for FormattedData { fn fmt_data(self) -> Self { self } }

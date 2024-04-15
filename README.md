@@ -42,7 +42,7 @@ struct MyType<'a>(&'a SomeForeignType);
 
 impl FormatData for MyType<'_> {
     fn fmt_data(self) -> FormattedData {
-        match self {
+        match self.0 {
             MyType(SomeForeignType::Int(val)) => FormattedData::INT(*val),
             MyType(SomeForeignType::Float(val)) => FormattedData::FLOAT(*val),
             MyType(SomeForeignType::String(val)) => FormattedData::STRING(val.to_owned()),
@@ -78,7 +78,10 @@ let data: Vec<Vec<String>> = vec![
     vec!["A3".to_string(), "B3".to_string(), "C3".to_string()],
 ];
 
-data.prep_data(conn).insert("MY_TABLE")?;
+let res: Arc<Connection> = data.prep_data(conn).insert("MY_TABLE")?;
+// `res` is Atomically Referencing `conn`
+// `res` has the executed Batch(es), you only need to commit it
+res.commit()?;
 Ok(())
 ```
 Is the same as:
