@@ -258,6 +258,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cfe80334af1fbaea016fbef0af77f5fa32452362e29a039389b8c93737585003"
 dependencies = [
  "cc",
+ "chrono",
  "lazy_static",
  "oracle_procmacro",
  "paste",
@@ -277,7 +278,7 @@ dependencies = [
 
 [[package]]
 name = "oracle_sql_tools"
-version = "0.1.21"
+version = "0.1.3"
 dependencies = [
  "chrono",
  "indicatif",

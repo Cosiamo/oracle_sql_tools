@@ -4,6 +4,7 @@
         "colindx",
         "cpus",
         "indicatif",
+        "Itertools",
         "nthreads",
         "thiserror",
         "unrar"

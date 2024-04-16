@@ -25,13 +25,13 @@ pub struct BatchPrep {
 pub struct GridProperties {
     pub data: Arc<Vec<Vec<FormattedData>>>,
     pub num: usize,
-    pub varchar_ind: Arc<Vec<usize>>,
+    pub datatype_indexes: Arc<DatatypeIndexes>,
 }
 
 #[derive(Debug)]
 pub struct CellProperties<'a> {
     pub cell: &'a FormattedData,
-    pub varchar_ind: &'a Arc<Vec<usize>>,
+    pub datatype_indexes: &'a Arc<DatatypeIndexes>,
     pub x_ind: usize,
     pub y_ind: usize,
 }

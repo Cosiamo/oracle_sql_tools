@@ -3,7 +3,8 @@
 use oracle::Connection;
 
 use statements::{PreppedGridData, PreppedRowData};
-use format_data::FormatData;
+use format_data::{FormatData, FormattedData};
+use types::DatatypeIndexes;
 
 pub mod statements;
 pub mod types;
@@ -49,17 +50,47 @@ impl<T: FormatData> PrepData<T> for Vec<Vec<T>> {
     type Prep = PreppedGridData;
 
     fn prep_data(self, connection: Connection) -> Self::Prep  {
+        // get's the 'dominate' datatype from each column
+        // weighted in order: VARCHAR2, FLOAT, INT, DATE
+        let mut is_varchar: Vec<usize> = Vec::new();
+        let mut is_float: Vec<usize> = Vec::new();
+        let mut is_int: Vec<usize> = Vec::new();
+        let mut is_date: Vec<usize> = Vec::new();
+
         let mut data = Vec::new();
         for row in self {
             let mut inner_vec = Vec::new();
+            let mut x_index: usize = 0 as usize;
             for cell in row {
-                inner_vec.push(cell.fmt_data())
+                let formatted_cell = cell.fmt_data();
+                match &formatted_cell {
+                    FormattedData::STRING(_) => is_varchar.push(x_index),
+                    FormattedData::INT(_) => is_int.push(x_index),
+                    FormattedData::FLOAT(_) => is_float.push(x_index),
+                    FormattedData::DATE(_) => is_date.push(x_index),
+                    FormattedData::EMPTY => { 
+                        inner_vec.push(formatted_cell); 
+                        x_index += 1 as usize; 
+                        continue;
+                    },
+                }
+                inner_vec.push(formatted_cell);
+                x_index += 1 as usize;
             }
             data.push(inner_vec)
         }
+
+        let data_indexes = DatatypeIndexes {
+            is_varchar,
+            is_float,
+            is_int,
+            is_date,
+        }.find_uniques();
+
         Self::Prep {
             data,
-            conn: connection
+            conn: connection,
+            data_indexes
         }
     }
 }

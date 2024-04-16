@@ -1,6 +1,6 @@
 use oracle::Connection;
 
-use crate::format_data::FormattedData;
+use crate::{format_data::FormattedData, types::DatatypeIndexes};
 
 pub mod mutate_grid;
 pub mod mutate_row;
@@ -14,6 +14,7 @@ pub mod select;
 pub struct PreppedGridData {
     pub data: Vec<Vec<FormattedData>>,
     pub conn: Connection,
+    pub data_indexes: DatatypeIndexes,
 }
 
 #[derive(Debug)]

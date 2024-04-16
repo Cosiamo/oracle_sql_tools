@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use oracle::Connection;
 
-use crate::types::{errors::OracleSqlToolsError, BatchPrep, DatatypeIndexes};
+use crate::types::{errors::OracleSqlToolsError, BatchPrep};
 use super::{create_table::CreateFromInsert, mutate_grid::MutateGrid, mutate_row::MutateRow, utils::does_table_exist, PreppedGridData};
 
 impl PreppedGridData {
@@ -30,9 +30,7 @@ impl PreppedGridData {
     /// ```
     /// 'res' is Atomically Referencing 'conn' because [`Connection`](oracle::Connection) cannot be copied, and it causes a lifetime conflict with the spawned threads when borrowed normally.
     pub fn insert(self, table_name: &str) -> Result<Arc<Connection>, OracleSqlToolsError> {
-        stage_insert_data(self, table_name)
-            .unwrap()
-            .split_batch_by_threads()
+        stage_insert_data(self, table_name)?.split_batch_by_threads()
     }
 
     /// Inserts the input data into a table using only a single thread
@@ -44,28 +42,21 @@ impl PreppedGridData {
     /// let res: Arc<Connection> = data.prep_data(conn).insert_single_thread("MY_TABLE")?;
     /// ```
     pub fn insert_single_thread(self, table_name: &str) -> Result<Arc<Connection>, OracleSqlToolsError> {
-        stage_insert_data(self, table_name)
-            .unwrap()
-            .single_thread_batch()
+        stage_insert_data(self, table_name)?.single_thread_batch()
     }
 }
 
 fn stage_insert_data(mut grid_data: PreppedGridData, table_name: &str) -> Result<BatchPrep, OracleSqlToolsError> {
     let table_exists = does_table_exist(&grid_data.conn, &table_name)?;
-    // get's the 'dominate' datatype from each column
-    // weighted in order: VARCHAR2, FLOAT, INT, DATE
-    let data_indexes: DatatypeIndexes;
     let (data_header, data_body) = match table_exists {
-        // if the user input table exists, it replaces the header with the column names from the table
+        // if the user input table exists, it replaces the header with the column names from the table in order
         true => {
-            data_indexes = grid_data.data.get_varchar_ind();
             let (data_header, _) = grid_data.data.replace_header(&grid_data.conn, &table_name)?;
             (data_header, grid_data.data)
         },
         // if user input table does not exist, it creates a new table
         false => {
-            data_indexes = grid_data.data.get_col_datatype();
-            grid_data.data.create_table(table_name, &data_indexes, &grid_data.conn)?;
+            grid_data.data.create_table(table_name, &grid_data.data_indexes, &grid_data.conn)?;
             let (data_header, _) = grid_data.data.separate_header();
             (data_header, grid_data.data)
         },
@@ -81,6 +72,6 @@ fn stage_insert_data(mut grid_data: PreppedGridData, table_name: &str) -> Result
         data: data_body,
         conn: grid_data.conn,
         insert_stmt: data_header.insert_stmt(table_name),
-        data_indexes,
+        data_indexes: grid_data.data_indexes,
     })
 }

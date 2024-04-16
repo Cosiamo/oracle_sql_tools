@@ -2,7 +2,7 @@ use std::{fmt::Display, sync::Arc, thread::{self, JoinHandle}};
 use indicatif::ProgressBar;
 use oracle::{Batch, Connection};
 
-use crate::{format_data::FormattedData, types::{errors::OracleSqlToolsError, BatchPrep, CellProperties, GridProperties}};
+use crate::{format_data::FormattedData, types::{errors::OracleSqlToolsError, BatchPrep, CellProperties, DatatypeIndexes, GridProperties}, utils::remove_invalid_chars};
 use super::mutate_grid::MutateGrid;
 
 impl BatchPrep {
@@ -10,7 +10,7 @@ impl BatchPrep {
         // wrapping these variables in an Arc because they're going to be passed to multiple threads
         let conn: Arc<Connection> = Arc::new(self.conn);
         let insert_stmt: Arc<String> = Arc::new(self.insert_stmt);
-        let varchar_ind: Arc<Vec<usize>> = Arc::new(self.data_indexes.is_varchar);
+        let datatype_indexes: Arc<DatatypeIndexes> = Arc::new(self.data_indexes);
 
         // divides the length of the data by the number of threads on the host CPU
         let len = self.data.len();
@@ -28,7 +28,7 @@ impl BatchPrep {
             // each thread needs to have it's own clone of the data
             let conn = Arc::clone(&conn);
             let insert = Arc::clone(&insert_stmt);
-            let varchar_ind = Arc::clone(&varchar_ind);
+            let datatype_indexes = Arc::clone(&datatype_indexes);
             let progress_bar = Arc::clone(&progress_bar);
             let arc_data: Arc<Vec<Vec<FormattedData>>>;
             if n + 1 < nthreads {
@@ -47,7 +47,7 @@ impl BatchPrep {
                 GridProperties {
                     data: arc_data,
                     num: (num.ceil() as usize - 1) * n,
-                    varchar_ind,
+                    datatype_indexes,
                 }.get_cell_props(&mut batch, progress_bar)
             }));
         }
@@ -68,12 +68,12 @@ impl BatchPrep {
         let mut batch: Batch<'_> = conn_clone
             .batch(&self.insert_stmt.as_str(), body_len.to_owned())
             .build()?;
-        // CellProperties expects an Arc<Vec<usize>>
-        let varchar_ind = Arc::new(self.data_indexes.is_varchar);
+        // CellProperties expects an Arc<DatatypeIndexes>
+        let datatype_indexes = Arc::new(self.data_indexes);
         GridProperties {
             data: self.data.into(),
             num: 0 as usize,
-            varchar_ind,
+            datatype_indexes,
         }.get_cell_props(&mut batch, progress_bar)?;
         Ok(conn)
     }
@@ -87,7 +87,7 @@ impl GridProperties {
             -> Result<(), OracleSqlToolsError> {
                 CellProperties {
                     cell,
-                    varchar_ind: &self.varchar_ind,
+                    datatype_indexes: &self.datatype_indexes,
                     x_ind: x,
                     y_ind: (self.num + y),
                 }.bind_cell_to_batch(batch)
@@ -102,31 +102,54 @@ impl GridProperties {
     }
 }
 
-impl CellProperties<'_> {
+macro_rules! empty_batch_set {
+    ($cell_props:ident, $data_type:ty, $batch:ident) => {
+        match $batch.set($cell_props.x_ind + 1, &None::<$data_type>) {
+            Ok(_) => return Ok(()),
+            Err(e) => return Err(OracleSqlToolsError::CellPropertyError { 
+                error_message: e, 
+                cell_value: "NULL".to_string(),
+                x_index: $cell_props.x_ind, 
+                y_index: $cell_props.y_ind 
+            }),
+        }
+    };
+}
+
+impl<'props> CellProperties<'props> {
     fn bind_cell_to_batch(self, batch: &mut Batch<'_>) -> Result<(), OracleSqlToolsError> {
         match &self.cell {
             FormattedData::STRING(val) => batch_set(self, batch, val.to_string()),
-            FormattedData::INT(val) => match self.varchar_ind.contains(&self.x_ind) {
+            FormattedData::INT(val) => match self.datatype_indexes.is_varchar.contains(&self.x_ind) {
                 true => batch_set(self, batch, val.to_string()),
                 false => batch_set(self, batch, *val),
             },
-            FormattedData::FLOAT(val) => match self.varchar_ind.contains(&self.x_ind) {
+            FormattedData::FLOAT(val) => match self.datatype_indexes.is_varchar.contains(&self.x_ind) {
                 true => batch_set(self, batch, val.to_string()),
                 false => batch_set(self, batch, *val),
             },
             FormattedData::DATE(val) => {
-                let stamp = val.to_string().parse::<String>()?;
-                batch_set(self, batch, stamp)
+                match self.datatype_indexes {
+                    ind if ind.is_varchar.contains(&self.x_ind) => batch_set(self, batch, val.to_string()),
+                    ind if ind.is_date.contains(&self.x_ind) => batch_set(self, batch, *val),
+                    ind if ind.is_int.contains(&self.x_ind) => {
+                        let to_num = remove_invalid_chars(&val.to_string());
+                        batch_set(self, batch, to_num.parse::<i64>().unwrap())
+                    },
+                    ind if ind.is_float.contains(&self.x_ind) => {
+                        let to_num = remove_invalid_chars(&val.to_string());
+                        batch_set(self, batch, to_num.parse::<f64>().unwrap())
+                    },
+                    _ => batch_set(self, batch, *val),
+                }
             },
             FormattedData::EMPTY => {
-                match batch.set(self.x_ind + 1, &None::<String>) {
-                    Ok(_) => return Ok(()),
-                    Err(e) => return Err(OracleSqlToolsError::CellPropertyError { 
-                        error_message: e, 
-                        cell_value: "NULL".to_string(),
-                        x_index: self.x_ind, 
-                        y_index: self.y_ind 
-                    }),
+                match self.datatype_indexes {
+                    ind if ind.is_varchar.contains(&self.x_ind) => empty_batch_set!(self, String, batch),
+                    ind if ind.is_date.contains(&self.x_ind) => empty_batch_set!(self, chrono::NaiveDateTime, batch),
+                    ind if ind.is_int.contains(&self.x_ind) => empty_batch_set!(self, i8, batch),
+                    ind if ind.is_float.contains(&self.x_ind) => empty_batch_set!(self, f32, batch),
+                    _ => empty_batch_set!(self, String, batch),
                 }
             },
         }
