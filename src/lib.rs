@@ -58,26 +58,30 @@ impl<T: FormatData> PrepData<T> for Vec<Vec<T>> {
         let mut is_date: Vec<usize> = Vec::new();
 
         let mut data = Vec::new();
+        let mut y_index: usize = 0 as usize;
         for row in self {
             let mut inner_vec = Vec::new();
             let mut x_index: usize = 0 as usize;
             for cell in row {
                 let formatted_cell = cell.fmt_data();
-                match &formatted_cell {
-                    FormattedData::STRING(_) => is_varchar.push(x_index),
-                    FormattedData::INT(_) => is_int.push(x_index),
-                    FormattedData::FLOAT(_) => is_float.push(x_index),
-                    FormattedData::DATE(_) => is_date.push(x_index),
-                    FormattedData::EMPTY => { 
-                        inner_vec.push(formatted_cell); 
-                        x_index += 1 as usize; 
-                        continue;
-                    },
+                if y_index > 0 {
+                    match &formatted_cell {
+                        FormattedData::STRING(_) => is_varchar.push(x_index),
+                        FormattedData::INT(_) => is_int.push(x_index),
+                        FormattedData::FLOAT(_) => is_float.push(x_index),
+                        FormattedData::DATE(_) => is_date.push(x_index),
+                        FormattedData::EMPTY => { 
+                            inner_vec.push(formatted_cell); 
+                            x_index += 1 as usize; 
+                            continue;
+                        },
+                    }
                 }
                 inner_vec.push(formatted_cell);
                 x_index += 1 as usize;
             }
-            data.push(inner_vec)
+            data.push(inner_vec);
+            y_index += 1 as usize;
         }
 
         let data_indexes = DatatypeIndexes {
