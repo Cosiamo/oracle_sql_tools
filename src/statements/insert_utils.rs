@@ -25,7 +25,7 @@ impl BatchPrep {
         let mut handles: Vec<JoinHandle<Result<(), OracleSqlToolsError>>> = Vec::new();
         // iterates as many times as there are threads
         for n in 0..nthreads {
-            // each thread needs to have it's own clone of the data
+            // each thread needs to have its own clone of the data
             let conn = Arc::clone(&conn);
             let insert = Arc::clone(&insert_stmt);
             let datatype_indexes = Arc::clone(&datatype_indexes);
@@ -72,7 +72,7 @@ impl BatchPrep {
         let datatype_indexes = Arc::new(self.data_indexes);
         GridProperties {
             data: self.data.into(),
-            num: 0 as usize,
+            num: 0usize,
             datatype_indexes,
         }.get_cell_props(&mut batch, progress_bar)?;
         Ok(conn)
@@ -89,11 +89,11 @@ impl GridProperties {
                     cell,
                     datatype_indexes: &self.datatype_indexes,
                     x_ind: x,
-                    y_ind: (self.num + y),
+                    y_ind: self.num + y,
                 }.bind_cell_to_batch(batch)
             })?;
             batch.append_row(&[])?;
-            progress_bar.inc(1 as u64);
+            progress_bar.inc(1u64);
             Ok(())
         })?;
 
@@ -122,7 +122,10 @@ impl<'props> CellProperties<'props> {
             FormattedData::STRING(val) => batch_set(self, batch, val.to_string()),
             FormattedData::INT(val) => match self.datatype_indexes.is_varchar.contains(&self.x_ind) {
                 true => batch_set(self, batch, val.to_string()),
-                false => batch_set(self, batch, *val),
+                false => match self.datatype_indexes.is_float.contains(&self.x_ind) {
+                    true => batch_set(self, batch, val.to_string().parse::<f64>().unwrap()),
+                    false => batch_set(self, batch, *val),
+                },
             },
             FormattedData::FLOAT(val) => match self.datatype_indexes.is_varchar.contains(&self.x_ind) {
                 true => batch_set(self, batch, val.to_string()),
