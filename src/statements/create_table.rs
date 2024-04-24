@@ -50,7 +50,7 @@ impl CreateFromInsert for Vec<Vec<FormattedData>> {
             } else if data_type_indexes.is_int.contains(&x) { sql_data_types.push(format!("NUMBER")) }
             else if data_type_indexes.is_float.contains(&x) { sql_data_types.push(format!("FLOAT")) }
             else if data_type_indexes.is_date.contains(&x) { sql_data_types.push(format!("DATE")) }
-            else { sql_data_types.push(format!("")) }
+            else { sql_data_types.push(format!("VARCHAR2(50)")) }
         }
 
         let mut col_names = Vec::new();
