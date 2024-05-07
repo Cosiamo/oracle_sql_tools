@@ -18,11 +18,23 @@ impl MutateGrid for Vec<Vec<FormattedData>> {
         for row_result in rows {
             let row = row_result?;
             for val in row.sql_values() {
-                let t = val.get()?;
-                header.push(FormattedData::STRING(t))
+                let res = val.get()?;
+                header.push(FormattedData::STRING(res))
             }
         }
-        let fmt_header = header.into();
+        let mut same = true;
+        for head in self[0].iter() {
+            let from_file = head.clone().to_string().to_uppercase();
+            let from_db = header.iter().map(|x| 
+                x.clone().to_string().to_ascii_uppercase()
+            ).collect::<Vec<String>>();
+            if !from_db.contains(&from_file) { same = false; }
+            else { continue; }
+        }
+        let fmt_header: Vec<FormattedData> = match same {
+            true => self[0].to_owned(),
+            false => header.into(),
+        };
         self.splice((0)..(1), []);
         Ok((fmt_header, self))
     }
