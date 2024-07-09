@@ -35,6 +35,7 @@ impl CreateFromInsert for Vec<Vec<FormattedData>> {
                     FormattedData::INT(val) => compare_data_length!(varchar_col_size, val, x),
                     FormattedData::FLOAT(val) => compare_data_length!(varchar_col_size, val, x),
                     FormattedData::DATE(val) => compare_data_length!(varchar_col_size, val, x),
+                    FormattedData::TIMESTAMP(val) => compare_data_length!(varchar_col_size, val, x),
                     FormattedData::EMPTY => { let val = 0 as usize; compare_data_length!(varchar_col_size, val, x) },
                 };
             }

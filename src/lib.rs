@@ -70,6 +70,7 @@ impl<T: FormatData> PrepData<T> for Vec<Vec<T>> {
                         FormattedData::INT(_) => is_int.push(x_index),
                         FormattedData::FLOAT(_) => is_float.push(x_index),
                         FormattedData::DATE(_) => is_date.push(x_index),
+                        FormattedData::TIMESTAMP(_) => is_date.push(x_index),
                         FormattedData::EMPTY => { 
                             inner_vec.push(formatted_cell); 
                             x_index += 1 as usize; 

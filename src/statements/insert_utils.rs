@@ -146,6 +146,21 @@ impl<'props> CellProperties<'props> {
                     _ => batch_set(self, batch, *val),
                 }
             },
+            FormattedData::TIMESTAMP(val) => {
+                match self.datatype_indexes {
+                    ind if ind.is_varchar.contains(&self.x_ind) => batch_set(self, batch, val.to_string()),
+                    ind if ind.is_date.contains(&self.x_ind) => batch_set(self, batch, *val),
+                    ind if ind.is_int.contains(&self.x_ind) => {
+                        let to_num = remove_invalid_chars(&val.to_string());
+                        batch_set(self, batch, to_num.parse::<i64>().unwrap())
+                    },
+                    ind if ind.is_float.contains(&self.x_ind) => {
+                        let to_num = remove_invalid_chars(&val.to_string());
+                        batch_set(self, batch, to_num.parse::<f64>().unwrap())
+                    },
+                    _ => batch_set(self, batch, *val),
+                }
+            },
             FormattedData::EMPTY => {
                 match self.datatype_indexes {
                     ind if ind.is_varchar.contains(&self.x_ind) => empty_batch_set!(self, String, batch),

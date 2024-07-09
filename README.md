@@ -46,6 +46,8 @@ impl FormatData for MyType<'_> {
             MyType(SomeForeignType::Int(val)) => FormattedData::INT(*val),
             MyType(SomeForeignType::Float(val)) => FormattedData::FLOAT(*val),
             MyType(SomeForeignType::String(val)) => FormattedData::STRING(val.to_owned()),
+            MyType(SomeForeignType::Date(val)) => FormattedData::DATE(*val),
+            MyType(SomeForeignType::DateTime(val)) => FormattedData::TIMESTAMP(*val),
             MyType(SomeForeignType::None) => FormattedData::EMPTY,
         }
     }
@@ -78,8 +80,8 @@ let data: Vec<Vec<String>> = vec![
     vec!["A3".to_string(), "B3".to_string(), "C3".to_string()],
 ];
 
+// `res` is [oracle::Connection] that's Atomically Reference Counted 
 let res: Arc<Connection> = data.prep_data(conn).insert("MY_TABLE")?;
-// `res` is Atomically Referencing `conn`
 // `res` has the executed Batch(es), you only need to commit it
 res.commit()?;
 Ok(())

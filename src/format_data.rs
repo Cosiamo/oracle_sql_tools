@@ -1,11 +1,12 @@
-use chrono::NaiveDateTime;
+use chrono::{NaiveDate, NaiveDateTime};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FormattedData {
     STRING(String),
     INT(i64),
     FLOAT(f64),
-    DATE(NaiveDateTime),
+    DATE(NaiveDate),
+    TIMESTAMP(NaiveDateTime),
     EMPTY,
 }
 
@@ -112,7 +113,7 @@ impl_fmt_data!(i32, INT);
 impl_fmt_data!(i64, INT);
 impl_fmt_data!(f32, FLOAT);
 impl_fmt_data!(f64, FLOAT);
-impl_fmt_data!(NaiveDateTime, DATE);
+impl_fmt_data!(NaiveDateTime, TIMESTAMP);
 
 macro_rules! impl_fmt_data_option {
     ($data_type:ty, $enum_type:ident) => {
@@ -134,4 +135,4 @@ impl_fmt_data_option!(Option<i32>, INT);
 impl_fmt_data_option!(Option<i64>, INT);
 impl_fmt_data_option!(Option<f32>, FLOAT);
 impl_fmt_data_option!(Option<f64>, FLOAT);
-impl_fmt_data_option!(Option<NaiveDateTime>, DATE);
+impl_fmt_data_option!(Option<NaiveDateTime>, TIMESTAMP);

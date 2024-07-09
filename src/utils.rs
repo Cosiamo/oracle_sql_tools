@@ -30,6 +30,7 @@ impl FormattedData {
             FormattedData::INT(val) => val.to_string(),
             FormattedData::FLOAT(val) => val.to_string(),
             FormattedData::DATE(val) => val.to_string(),
+            FormattedData::TIMESTAMP(val) => val.to_string(),
             FormattedData::EMPTY => "".to_string(),
         }
     }
