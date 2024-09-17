@@ -1,5 +1,9 @@
-use crate::{types::{errors::OracleSqlToolsError, FilterType}, utils::remove_invalid_chars};
+use utils::get_header_and_query;
+
+use crate::types::{errors::OracleSqlToolsError, ClauseType};
 use super::PreppedRowData;
+
+mod utils;
 
 impl PreppedRowData {
     /// Selects the columns (via the input vector) from the specified table.
@@ -19,20 +23,17 @@ impl PreppedRowData {
     /// let table_data: Vec<Vec<Option<String>>> = col_names.prep_data(conn).select("MY_TABLE")?;
     /// ```
     pub fn select(mut self, table_name: &str) -> Self {
-        let header = self.data.iter().map(|cell|
-            remove_invalid_chars(cell)
-        ).collect::<Vec<String>>();
-        let query = format!("SELECT {} FROM {}", &header.join(", "), table_name);
+        let (header, query) = get_header_and_query(&self, table_name);
         self.query = Some(query);
         self.header = Some(header);
         self
     }
 
-    pub fn filter(mut self, filter_type: FilterType, column: &str, value: &str) -> Self {
-        let ty = match filter_type {
-            FilterType::Where => "WHERE",
-            FilterType::And => "AND",
-            FilterType::Or => "OR"
+    pub fn filter(mut self, clause: ClauseType, column: &str, value: &str) -> Self {
+        let ty = match clause {
+            ClauseType::Where => "WHERE",
+            ClauseType::And => "AND",
+            ClauseType::Or => "OR"
         };
 
         let stmt = format!("{} {} = '{}'", ty, column, value);

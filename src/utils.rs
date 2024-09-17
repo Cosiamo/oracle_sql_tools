@@ -2,27 +2,6 @@ use itertools::Itertools;
 
 use crate::{format_data::FormattedData, types::DatatypeIndexes};
 
-/// Removes characters that are invalid in SQL column names
-pub fn remove_invalid_chars(input: &String) -> String {
-    input
-        .trim()
-        .replace(|c: char| !c.is_ascii(), "")
-        .replace(" ", "_")
-        .replace("-", "_")
-        .replace("'", "")
-        .replace("%", "")
-        .replace("!", "")
-        .replace("?", "")
-        .replace("|", "")
-        .replace("#", "")
-        .replace("\\", "")
-        .replace("/", "")
-        .replace("(", "")
-        .replace(")", "")
-        .replace("+", "")
-        .replace("#", "")
-}
-
 impl FormattedData {
     pub fn to_string(self) -> String {
         match self {

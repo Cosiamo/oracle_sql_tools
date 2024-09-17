@@ -4,6 +4,8 @@ use oracle::Connection;
 use crate::types::{errors::OracleSqlToolsError, BatchPrep};
 use super::{create_table::CreateFromInsert, mutate_grid::MutateGrid, mutate_row::MutateRow, utils::does_table_exist, PreppedGridData};
 
+mod utils;
+
 impl PreppedGridData {
     /// Inserts the input data into a table
     ///

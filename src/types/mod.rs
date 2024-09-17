@@ -37,7 +37,7 @@ pub struct CellProperties<'a> {
 }
 
 #[derive(Debug)]
-pub enum FilterType {
+pub enum ClauseType {
     Where,
     And,
     Or

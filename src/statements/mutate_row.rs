@@ -1,4 +1,5 @@
-use crate::{format_data::FormattedData, utils::remove_invalid_chars};
+use crate::format_data::FormattedData;
+use super::utils::remove_invalid_chars;
 
 pub(crate) trait MutateRow {
     fn insert_stmt(self, table_name: &str) -> String;

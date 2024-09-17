@@ -1,5 +1,4 @@
 use oracle::Connection;
-
 use crate::types::errors::OracleSqlToolsError;
 
 /// Checks if a table exists
@@ -15,4 +14,25 @@ pub fn does_table_exist(conn: &Connection, table_name: &str) -> Result<bool, Ora
         }
     }
     Ok(false)
+}
+
+/// Removes characters that are invalid in SQL column names
+pub fn remove_invalid_chars(input: &String) -> String {
+    input
+        .trim()
+        .replace(|c: char| !c.is_ascii(), "")
+        .replace(" ", "_")
+        .replace("-", "_")
+        .replace("'", "")
+        .replace("%", "")
+        .replace("!", "")
+        .replace("?", "")
+        .replace("|", "")
+        .replace("#", "")
+        .replace("\\", "")
+        .replace("/", "")
+        .replace("(", "")
+        .replace(")", "")
+        .replace("+", "")
+        .replace("#", "")
 }

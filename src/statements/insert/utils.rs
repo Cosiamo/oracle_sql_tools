@@ -2,8 +2,7 @@ use std::{fmt::Display, sync::Arc, thread::{self, JoinHandle}};
 use indicatif::ProgressBar;
 use oracle::{Batch, Connection};
 
-use crate::{format_data::FormattedData, types::{errors::OracleSqlToolsError, BatchPrep, CellProperties, DatatypeIndexes, GridProperties}, utils::remove_invalid_chars};
-use super::mutate_grid::MutateGrid;
+use crate::{format_data::FormattedData, statements::{mutate_grid::MutateGrid, utils::remove_invalid_chars}, types::{errors::OracleSqlToolsError, BatchPrep, CellProperties, DatatypeIndexes, GridProperties}};
 
 impl BatchPrep {
     pub(crate) fn split_batch_by_threads(mut self) -> Result<Arc<Connection>, OracleSqlToolsError> {

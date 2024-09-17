@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use oracle::Connection;
 
-use crate::{format_data::FormattedData, types::{errors::OracleSqlToolsError, DatatypeIndexes}, utils::remove_invalid_chars};
-use super::mutate_row::MutateRow;
+use crate::{format_data::FormattedData, types::{errors::OracleSqlToolsError, DatatypeIndexes}};
+use super::{mutate_row::MutateRow, utils::remove_invalid_chars};
 
 pub(crate) trait CreateFromInsert {
     fn create_table(&self, table_name: &str, col_indexes: &DatatypeIndexes, conn: &Connection) 
