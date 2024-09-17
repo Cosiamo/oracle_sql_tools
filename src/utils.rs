@@ -24,7 +24,7 @@ pub fn remove_invalid_chars(input: &String) -> String {
 }
 
 impl FormattedData {
-    pub(crate) fn to_string(self) -> String {
+    pub fn to_string(self) -> String {
         match self {
             FormattedData::STRING(val) => val.to_owned(),
             FormattedData::INT(val) => val.to_string(),
