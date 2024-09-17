@@ -109,6 +109,9 @@ impl<T: FormatData> PrepData<T> for Vec<T> {
         Self::Prep {
             data,
             conn: connection,
+            query: None,
+            header: None,
+            filters: None,
         }
     }
 }

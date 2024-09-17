@@ -21,4 +21,7 @@ pub enum OracleSqlToolsError {
 
     #[error(transparent)]
     DateCantConvertToString(#[from] core::convert::Infallible),
+
+    #[error("SQL Query is empty")]
+    SQLQueryEmpty
 }

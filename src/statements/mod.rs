@@ -21,4 +21,7 @@ pub struct PreppedGridData {
 pub struct PreppedRowData {
     pub data: Vec<String>,
     pub conn: Connection,
+    pub query: Option<String>,
+    pub header: Option<Vec<String>>,
+    pub filters: Option<Vec<String>>,
 }
